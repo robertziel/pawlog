@@ -1,0 +1,5 @@
+sites:
+  - id: t1
+    url: https://t1.test
+  - id: t2
+    url: http://t2.test:8000

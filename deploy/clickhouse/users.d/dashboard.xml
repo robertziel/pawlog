@@ -1,0 +1,17 @@
+<clickhouse>
+    <!-- Read-only user for the Rails dashboard. readonly=2: no writes/DDL, but per-query settings are allowed
+         (the click_house gem sends send_progress_in_http_headers on every query). -->
+    <profiles>
+        <dashboard_readonly>
+            <readonly>2</readonly>
+        </dashboard_readonly>
+    </profiles>
+    <users>
+        <dashboard>
+            <password from_env="CLICKHOUSE_DASHBOARD_PASSWORD"/>
+            <profile>dashboard_readonly</profile>
+            <networks><ip>::/0</ip></networks>
+            <allow_databases><database from_env="CLICKHOUSE_DB"/></allow_databases>
+        </dashboard>
+    </users>
+</clickhouse>

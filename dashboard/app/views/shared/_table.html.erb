@@ -1,0 +1,15 @@
+<%# rows, cols: [[header, key, formatter]], link: ->(row) { path } (optional) %>
+<table>
+  <thead><tr><% cols.each do |h, _| %><th><%= h %></th><% end %></tr></thead>
+  <tbody>
+    <% rows.each do |r| %>
+      <tr>
+        <% cols.each_with_index do |(_, k, fmt), i| %>
+          <% v = fmt ? fmt.call(r[k]) : (r[k].presence || "(none)") %>
+          <td><%= i.zero? && local_assigns[:link] ? link_to(v, link.call(r)) : v %></td>
+        <% end %>
+      </tr>
+    <% end %>
+    <% if rows.empty? %><tr><td colspan="<%= cols.size %>" class="empty">0 rows</td></tr><% end %>
+  </tbody>
+</table>

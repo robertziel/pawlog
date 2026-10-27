@@ -1,0 +1,13 @@
+<% content_for :title, "#{site.id} · #{@path}" %>
+<h1><%= @path %> <%= link_to "heatmap", heatmap_path(scope(path: @path)), class: "small" %></h1>
+<section class="kpis">
+  <% t = @totals || {} %>
+  <div class="kpi" data-kpi="pageviews"><span class="label">Pageviews</span><span class="value"><%= num(t["pageviews"]) %></span></div>
+  <div class="kpi" data-kpi="visitors"><span class="label">Visitors</span><span class="value"><%= num(t["visitors"]) %></span></div>
+  <div class="kpi" data-kpi="avg_engaged"><span class="label">Avg engaged</span><span class="value"><%= secs(t["avg_engaged_ms"].to_f / 1000) %></span></div>
+  <div class="kpi" data-kpi="entries"><span class="label">Entries</span><span class="value"><%= num(@entry_exit["entries"]) %></span></div>
+  <div class="kpi" data-kpi="exits"><span class="label">Exits</span><span class="value"><%= num(@entry_exit["exits"]) %></span></div>
+  <div class="kpi" data-kpi="bounces"><span class="label">Bounces</span><span class="value"><%= num(@entry_exit["bounces"]) %></span></div>
+</section>
+<%= bars(@series) %>
+<%= render "shared/table", rows: @series, cols: [ [ "Day", "day" ], [ "Pageviews", "pageviews", method(:num) ], [ "Visitors", "visitors", method(:num) ] ] %>

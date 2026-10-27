@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || "pawlog" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag :app %>
+    <%= yield :head %>
+  </head>
+  <body>
+    <% if authenticated? %>
+      <header class="top">
+        <strong>pawlog</strong>
+        <nav>
+          <%= link_to "Overview", root_path(scope), class: ("on" if controller_name == "overview") %>
+          <%= link_to "Realtime", realtime_path(site: site.id), class: ("on" if controller_name == "realtime") %>
+          <%= link_to "Heatmap", heatmap_path(scope), class: ("on" if controller_name == "heatmaps") %>
+        </nav>
+        <%= form_with url: request.path, method: :get, class: "filters" do |f| %>
+          <%= f.select :site, Site.all.map(&:id), selected: site.id %>
+          <% unless controller_name == "realtime" %>
+            <%= f.date_field :from, value: range.begin %>
+            <%= f.date_field :to, value: range.end %>
+          <% end %>
+          <% %i[path vw layout mode].each do |k| %>
+            <%= f.hidden_field k, value: params[k] if params[k].present? %>
+          <% end %>
+          <%= f.submit "Apply" %>
+        <% end %>
+        <%= button_to "Sign out", session_path, method: :delete, class: "signout" %>
+      </header>
+    <% end %>
+    <main><%= yield %></main>
+  </body>
+</html>

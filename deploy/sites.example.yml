@@ -1,0 +1,5 @@
+# Copy to deploy/sites.yml. The sites this deployment tracks; id = data-site on the pawlog.js script tag.
+# url = the site's origin; the heatmap frames <url><path>#pawlog-heatmap.
+sites:
+  - id: www
+    url: https://www.example.com

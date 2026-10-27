@@ -1,0 +1,27 @@
+<% content_for :title, "#{site.id} · heatmap" %>
+<% if @pages %>
+  <h2>Pick a page</h2>
+  <%= render "shared/table", rows: @pages, link: ->(r) { heatmap_path(scope(path: r["path"], vw: @vw, mode: @mode)) },
+        cols: [ [ "Path", "path" ], [ "Views", "pageviews", method(:num) ] ] %>
+<% else %>
+  <%= form_with url: heatmap_path, method: :get, class: "filters hm-filters" do |f| %>
+    <% scope.each { |k, v| %><%= f.hidden_field k, value: v %><% } %>
+    <%= f.text_field :path, value: @path, size: 40 %>
+    <%= f.select :vw, HeatmapsController::BUCKETS.keys, selected: @vw %>
+    <%= f.select :mode, HeatmapsController::MODES, selected: @mode %>
+    <%= f.select :layout, [ [ "all layouts", 0 ] ] + @layouts.map { |l| [ "#{l['layout_hash']} · #{num(l['clicks'])} clicks", l["layout_hash"] ] }, selected: @layout %>
+    <%= f.submit "Show" %>
+  <% end %>
+  <p class="meta" data-counts>
+    <%= num(@data[:grid].sum { |c| c["clicks"].to_i }) %> clicks · <%= @data[:grid].size %> cells ·
+    <%= @data[:elements].size %> elements · <%= num(@data[:scroll].sum { |s| s["n"].to_i }) %> scroll samples
+  </p>
+  <p id="heatmap-status" class="meta">loading <%= site.url %><%= @path %> …</p>
+  <div id="heatmap" class="hm-wrap" data-url="<%= site.url %><%= @path %>" data-origin="<%= site.origin %>"
+       data-mode="<%= @mode %>" data-width="<%= HeatmapsController::BUCKETS[@vw] %>">
+    <iframe title="page under heatmap" sandbox="allow-scripts allow-same-origin" scrolling="no"></iframe>
+    <canvas aria-hidden="true"></canvas>
+  </div>
+  <script type="application/json" id="heatmap-data"><%= raw json_escape(@data.to_json) %></script>
+  <%= javascript_include_tag "heatmap", defer: true %>
+<% end %>

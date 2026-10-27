@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pawlog demo</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; margin: 0; }
+    main { max-width: 760px; margin: 0 auto; padding: 16px; }
+    .tall { height: 2400px; background: linear-gradient(#fff, #eef); }
+    button, a { display: inline-block; padding: 8px 14px; margin: 4px; }
+  </style>
+  <!-- src and data-dashboard placeholders are filled in by whoever serves this page (test/e2e.mjs) -->
+  <script defer src="PAWLOG_SRC" data-site="demo" data-layout="main" data-dashboard="PAWLOG_DASHBOARD"></script>
+</head>
+<body>
+<main class="layout-article">
+  <h1>pawlog demo</h1>
+  <nav class="menu"><a href="#" id="home-link">Home</a><a href="#" class="nav-item">One</a><a href="#" class="nav-item">Two</a></nav>
+  <p><button id="cta">Subscribe</button> <button data-track="share">Share</button>
+     <button id="spa" onclick="history.pushState({}, '', '/article/2'); document.title='Article 2'">SPA navigate</button>
+     <button id="custom" onclick="analytics.track('signup', {plan: 'pro'})">track()</button>
+     <button id="consent" onclick="analytics.consent(true)">Consent</button>
+     <button id="revoke" onclick="analytics.consent(false)">Revoke</button></p>
+  <div class="tall"></div>
+  <p><a href="#" id="footer-link">Footer link</a></p>
+</main>
+</body>
+</html>

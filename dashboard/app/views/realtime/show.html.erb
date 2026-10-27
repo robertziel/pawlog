@@ -1,0 +1,8 @@
+<% content_for :title, "#{site.id} · realtime" %>
+<% content_for :head do %><meta http-equiv="refresh" content="10"><% end %>
+<section class="kpis">
+  <div class="kpi" data-kpi="visitors"><span class="label">Visitors · 5 min</span><span class="value"><%= num(@now["visitors"]) %></span></div>
+  <div class="kpi" data-kpi="pageviews"><span class="label">Pageviews · 5 min</span><span class="value"><%= num(@now["pageviews"]) %></span></div>
+</section>
+<p class="meta">refresh 10 s · <%= Time.current.utc.strftime("%H:%M:%S UTC") %></p>
+<%= render "shared/table", rows: @pages, cols: [ [ "Path", "path" ], [ "Visitors", "visitors", method(:num) ], [ "Pageviews", "pageviews", method(:num) ] ] %>
