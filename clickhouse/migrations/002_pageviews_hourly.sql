@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS pageviews_hourly
     path       String,
     views      SimpleAggregateFunction(sum, UInt64),
     engaged_ms SimpleAggregateFunction(sum, UInt64),
-    visitors   AggregateFunction(uniq, UInt64)
+    visitors   AggregateFunction(uniqCombined(12), UInt64)
 )
 ENGINE = AggregatingMergeTree
 PARTITION BY toYYYYMM(hour)
@@ -19,7 +19,7 @@ SELECT
     path,
     countIf(event = 'pageview') AS views,
     sumIf(toUInt64(engaged_ms), event = 'engagement') AS engaged_ms,
-    uniqState(visitor_id) AS visitors
+    uniqCombinedState(12)(visitor_id) AS visitors
 FROM events
 WHERE event IN ('pageview', 'engagement')
 GROUP BY site_id, hour, path;

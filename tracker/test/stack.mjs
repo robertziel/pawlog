@@ -53,7 +53,7 @@ test("events from a real page land in ClickHouse and rollups", async () => {
   const [s] = await ch(`SELECT sum(pageviews) AS pv, argMinMerge(entry_path) AS entry, argMaxMerge(exit_path) AS exit, any(ref_domain) AS ref, any(browser) AS browser
                         FROM sessions WHERE session_id = ${session}`);
   assert.deepEqual({ ...s, pv: +s.pv }, { pv: 2, entry: "/demo.html", exit: "/article/2", ref: "news.example.org", browser: "Chrome" });
-  const [src] = await ch(`SELECT uniqMerge(visits) AS v FROM sources_daily WHERE site_id = 'demo' AND ref_domain = 'news.example.org' AND utm_source = 'e2e'`);
+  const [src] = await ch(`SELECT uniqCombinedMerge(12)(visits) AS v FROM sources_daily WHERE site_id = 'demo' AND ref_domain = 'news.example.org' AND utm_source = 'e2e'`);
   assert.ok(+src.v >= 1);
   const [el] = await ch(`SELECT sum(clicks) AS c FROM click_elements WHERE site_id = 'demo' AND selector = '#cta'`);
   assert.ok(+el.c >= 1);

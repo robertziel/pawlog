@@ -34,17 +34,17 @@ check() { # name, rollup query, raw query; each returns rows to hash
   if [ "$a" = "$b" ]; then echo "PASS $1 ($(echo "$a" | cut -f1) groups)"; else echo "FAIL $1: rollup=$a raw=$b"; fail=1; fi
 }
 check pageviews_hourly \
-  "SELECT site_id, hour, path, sum(views), sum(engaged_ms), uniqMerge(visitors) FROM pageviews_hourly GROUP BY ALL" \
-  "SELECT site_id, toDateTime(toStartOfHour(ts), 'UTC') h, path, countIf(event='pageview'), sumIf(toUInt64(engaged_ms), event='engagement'), uniq(visitor_id) FROM events WHERE event IN ('pageview','engagement') GROUP BY site_id, h, path"
+  "SELECT site_id, hour, path, sum(views), sum(engaged_ms), uniqCombinedMerge(12)(visitors) FROM pageviews_hourly GROUP BY ALL" \
+  "SELECT site_id, toDateTime(toStartOfHour(ts), 'UTC') h, path, countIf(event='pageview'), sumIf(toUInt64(engaged_ms), event='engagement'), uniqCombined(12)(visitor_id) FROM events WHERE event IN ('pageview','engagement') GROUP BY site_id, h, path"
 check sources_daily \
-  "SELECT site_id, day, ref_domain, utm_source, utm_medium, utm_campaign, sum(pageviews), uniqMerge(visits), uniqMerge(visitors) FROM sources_daily GROUP BY ALL" \
-  "SELECT site_id, toDate(ts) d, ref_domain, utm_source, utm_medium, utm_campaign, count(), uniq(session_id), uniq(visitor_id) FROM events WHERE event='pageview' GROUP BY site_id, d, ref_domain, utm_source, utm_medium, utm_campaign"
+  "SELECT site_id, day, ref_domain, utm_source, utm_medium, utm_campaign, sum(pageviews), uniqCombinedMerge(12)(visits), uniqCombinedMerge(12)(visitors) FROM sources_daily GROUP BY ALL" \
+  "SELECT site_id, toDate(ts) d, ref_domain, utm_source, utm_medium, utm_campaign, count(), uniqCombined(12)(session_id), uniqCombined(12)(visitor_id) FROM events WHERE event='pageview' GROUP BY site_id, d, ref_domain, utm_source, utm_medium, utm_campaign"
 check sessions \
   "SELECT site_id, day, session_id, min(started_at), max(ended_at), sum(pageviews), argMinMerge(entry_path), argMaxMerge(exit_path) FROM sessions GROUP BY ALL" \
   "SELECT site_id, toDate(ts) d, session_id, min(ts), max(ts), countIf(event='pageview'), argMin(path, ts), argMax(path, ts) FROM events GROUP BY site_id, d, session_id"
 check titles_daily \
-  "SELECT site_id, day, title, sum(views), uniqMerge(visitors) FROM titles_daily GROUP BY ALL" \
-  "SELECT site_id, toDate(ts) d, title, count(), uniq(visitor_id) FROM events WHERE event='pageview' GROUP BY site_id, d, title"
+  "SELECT site_id, day, title, sum(views), uniqCombinedMerge(12)(visitors) FROM titles_daily GROUP BY ALL" \
+  "SELECT site_id, toDate(ts) d, title, count(), uniqCombined(12)(visitor_id) FROM events WHERE event='pageview' GROUP BY site_id, d, title"
 check click_grid \
   "SELECT site_id, path, vw_bucket, layout_hash, day, x_pct, y_px, sum(clicks) FROM click_grid GROUP BY ALL" \
   "SELECT site_id, path, vw_bucket, layout_hash, toDate(ts) d, toUInt8(least(floor(page_x_pct), 99)) x, intDiv(page_y, 10) * 10 y, count() FROM events WHERE event='click' GROUP BY site_id, path, vw_bucket, layout_hash, d, x, y"
@@ -59,8 +59,8 @@ raw_sessions="SELECT site_id, toDate(ts) d, session_id, any(visitor_id) v, count
   dateDiff('millisecond', min(ts), max(ts)) / 1000 dur, argMin(path, ts) entry, argMax(path, ts) exit,
   any(country) country, any(device) device, any(browser) browser, any(os) os FROM events GROUP BY site_id, d, session_id"
 check session_stats \
-  "SELECT site_id, day, dim, value, sessions, engaged, round(duration_s, 3), uniqMerge(visitors) FROM session_stats GROUP BY ALL" \
-  "SELECT site_id, d, x.1, x.2, count(), countIf(pawlog_engaged(pv, dur)), round(sum(dur), 3), uniq(v) FROM ($raw_sessions)
+  "SELECT site_id, day, dim, value, sessions, engaged, round(duration_s, 3), uniqCombinedMerge(12)(visitors) FROM session_stats GROUP BY ALL" \
+  "SELECT site_id, d, x.1, x.2, count(), countIf(pawlog_engaged(pv, dur)), round(sum(dur), 3), uniqCombined(12)(v) FROM ($raw_sessions)
    ARRAY JOIN [('all', ''), ('country', toString(country)), ('device', toString(device)), ('browser', toString(browser)), ('os', toString(os))] AS x WHERE pv > 0 GROUP BY site_id, d, x.1, x.2"
 check session_pages \
   "SELECT site_id, day, path, entries, exits, bounces FROM session_pages" \

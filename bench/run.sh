@@ -101,6 +101,16 @@ latency="SELECT splitByChar('|', log_comment)[2] AS query, splitByChar('|', log_
 echo "## Query latency (path = '$top', ranges end $to)"; echo
 md "$latency GROUP BY query, range ORDER BY query, toUInt32OrZero(trimRight(range, 'dm'))"
 
+echo "## Visitor count error: rollup uniqCombined(12) vs exact count over raw events, 28 days"; echo
+from28=$(date -u -d "$to -27 days" +%F)
+md "SELECT 'site' AS scope, r.v AS rollup, e.v AS exact, round(100 * (r.v - e.v) / e.v, 2) AS error_pct
+    FROM (SELECT uniqCombinedMerge(12)(visitors) AS v FROM pageviews_hourly WHERE site_id = '$site' AND toDate(hour) BETWEEN '$from28' AND '$to') r,
+         (SELECT uniqExact(visitor_id) AS v FROM events WHERE site_id = '$site' AND event IN ('pageview', 'engagement') AND toDate(ts) BETWEEN '$from28' AND '$to') e
+    UNION ALL
+    SELECT 'page $top', r.v, e.v, round(100 * (r.v - e.v) / e.v, 2)
+    FROM (SELECT uniqCombinedMerge(12)(visitors) AS v FROM pageviews_hourly WHERE site_id = '$site' AND path = '$top' AND toDate(hour) BETWEEN '$from28' AND '$to') r,
+         (SELECT uniqExact(visitor_id) AS v FROM events WHERE site_id = '$site' AND event IN ('pageview', 'engagement') AND path = '$top' AND toDate(ts) BETWEEN '$from28' AND '$to') e"
+
 echo "## Dashboard page latency, warm p50: queries run in parallel threads (Analytics.parallel), so a page = its slowest thread"; echo
 p50() { ch -q "SELECT quantileExactIf(0.5)(query_duration_ms, splitByChar('|', log_comment)[4] != '0') FROM system.query_log
                 WHERE type = 'QueryFinish' AND current_database = '$db' AND log_comment LIKE 'bench|$1|$2|%'"; }

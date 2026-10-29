@@ -1,13 +1,13 @@
 -- dim: country | device | browser | os; closed days from session_stats, open days from sessions
 WITH (SELECT max(day) FROM session_stats) AS closed
-SELECT value, sum(n) AS sessions, uniqMerge(v) AS visitors
+SELECT value, sum(n) AS sessions, uniqCombinedMerge(12)(v) AS visitors
 FROM
 (
     SELECT value, sessions AS n, visitors AS v
     FROM session_stats
     WHERE site_id = {site:String} AND day BETWEEN {from:Date} AND least({to:Date}, closed) AND dim = {dim:String}
     UNION ALL
-    SELECT value, count(), uniqState(visitor_id)
+    SELECT value, count(), uniqCombinedState(12)(visitor_id)
     FROM
     (
         SELECT any(visitor_id) AS visitor_id, any({dim:Identifier}) AS value

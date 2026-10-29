@@ -92,23 +92,24 @@ rollup MVs. ClickHouse limited to 4 CPU / 16 GB.
 | store | per day | 180 days | 1 year | 3 years |
 |---|---|---|---|---|
 | events (TTL 180 d, 46 B/event) | 155 MiB | 27.2 GiB | 27.2 GiB | 27.2 GiB |
-| rollups (no TTL) | 44 MiB | 7.7 GiB | 15.7 GiB | 47.0 GiB |
-| Redpanda (7-day retention, JSON) | 2.09 GiB | 14.7 GiB | 14.7 GiB | 14.7 GiB |
+| rollups (no TTL) | 36 MiB | 6.4 GiB | 13.0 GiB | 38.8 GiB |
+| Redpanda (7-day retention, JSON) | 2.10 GiB | 14.7 GiB | 14.7 GiB | 14.7 GiB |
 
 | page (warm p50, ms) | 7 d | 28 d |
 |---|---|---|
-| Home | 698 | 1,136 |
-| Reports snapshot | 698 | 830 |
-| Page detail | 52 | 98 |
-| Heatmap | 8 | 11 |
-| Realtime overview (30 min) | 5 | 5 |
+| Home | 111 | 412 |
+| Reports snapshot | 63 | 124 |
+| Page detail | 51 | 52 |
+| Heatmap | 7 | 11 |
+| Realtime overview (30 min) | 6 | 6 |
 
 | concurrent clients (Home mix, 28 d) | 1 | 4 | 16 | 64 |
 |---|---|---|---|---|
-| QPS · p50 ms | 3 · 152 | 7 · 395 | 5 · 2,150 | 6 × MEMORY_LIMIT_EXCEEDED |
+| QPS · p50 ms | 12 · 35 | 24 · 99 | 18 · 413 | 14 · 2,589 |
 
-Ingest 620k–925k events/s per day (average real rate at this volume: 41 events/s). Slowest queries at 28 d: titles
-1,136 ms, breakdown 830 ms, sources 414 ms (all merge exact `uniq` states).
+Visitor counts in rollups are `uniqCombined(12)` (fixed ≤ 3 KB state, exact for small sets): 28-day error vs exact
+count −0.53% site, −1.01% top page. Ingest 560k–850k events/s per day (average real rate at this volume: 41 events/s).
+Slowest query: titles, 412 ms at 28 d.
 
 ## Make targets
 

@@ -1,5 +1,5 @@
 -- path = '' for the whole site
-SELECT toDate(hour) AS day, sum(views) AS pageviews, uniqMerge(visitors) AS visitors
+SELECT toDate(hour) AS day, sum(views) AS pageviews, uniqCombinedMerge(12)(visitors) AS visitors
 FROM pageviews_hourly
 WHERE site_id = {site:String} AND hour >= {from:Date} AND hour < {to:Date} + 1
   AND ({path:String} = '' OR path = {path:String})

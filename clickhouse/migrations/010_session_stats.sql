@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS session_stats
     sessions   UInt64,
     engaged    UInt64,
     duration_s Float64,
-    visitors   AggregateFunction(uniq, UInt64)
+    visitors   AggregateFunction(uniqCombined(12), UInt64)
 )
 ENGINE = MergeTree
 ORDER BY (site_id, day, dim, value);
@@ -31,7 +31,7 @@ ORDER BY (site_id, day, path);
 CREATE MATERIALIZED VIEW IF NOT EXISTS session_stats_mv REFRESH EVERY 1 HOUR APPEND TO session_stats AS
 SELECT site_id, day, d.1 AS dim, d.2 AS value,
        count() AS sessions, countIf(pawlog_engaged(pv, dur)) AS engaged, sum(dur) AS duration_s,
-       uniqState(visitor_id) AS visitors
+       uniqCombinedState(12)(visitor_id) AS visitors
 FROM
 (
     SELECT site_id, day, any(visitor_id) AS visitor_id, sum(pageviews) AS pv,
