@@ -1,0 +1,14 @@
+<details class="menu range">
+  <summary><%= range_label %> ▾</summary>
+  <div class="pop">
+    <% ApplicationController::RANGE_PRESETS.each do |d| %>
+      <%= link_to "Last #{d} days", here(from: (Date.current - d + 1).iso8601, to: Date.current.iso8601) %>
+    <% end %>
+    <%= form_with url: request.path, method: :get, class: "custom" do |f| %>
+      <% request.query_parameters.except("from", "to").each do |k, v| %><%= f.hidden_field k, value: v %><% end %>
+      <%= f.date_field :from, value: range.begin, "aria-label": "from" %>
+      <%= f.date_field :to, value: range.end, "aria-label": "to" %>
+      <%= f.submit "Apply" %>
+    <% end %>
+  </div>
+</details>

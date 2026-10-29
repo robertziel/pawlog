@@ -1,0 +1,37 @@
+<% content_for :title, "#{site.id} · home" %>
+<div class="page-head"><h1>Home</h1><%= render "shared/range" %></div>
+<div class="home-top">
+  <section class="card chart-card">
+    <div class="tabs" role="tablist">
+      <% HomeController::METRICS.each do |k, label| %>
+        <% kind = { "engagement_rate" => :pct, "views_per_session" => :ratio }.fetch(k, :num) %>
+        <%= link_to here(metric: k), class: "tab#{' on' if k == @metric}", role: "tab", "aria-selected": k == @metric, data: { kpi: k } do %>
+          <span class="label"><%= label %></span>
+          <span class="value"><%= fmt(kind, @current[k]) %></span>
+          <%= delta(@current[k], @previous[k]) %>
+        <% end %>
+      <% end %>
+    </div>
+    <% kind = { "engagement_rate" => :pct, "views_per_session" => :ratio }.fetch(@metric, :num) %>
+    <%= line_chart(@series, @previous_series, key: @metric, kind: kind, label: "#{HomeController::METRICS[@metric]} per day vs previous period") %>
+    <div class="legend"><span class="cur">— <%= range_label %></span><span class="prev">- - Previous period</span>
+      <%= link_to "View reports snapshot →", reports_path(scope), class: "more" %></div>
+  </section>
+  <section class="card rt-card">
+    <%= render "shared/realtime_card", now: @realtime, minutes: @minutes %>
+    <table>
+      <thead><tr><th>City</th><th class="n">Active users</th></tr></thead>
+      <tbody>
+        <% @cities.first(5).each do |r| %><tr><td><%= r["value"].presence || "(not set)" %></td><td class="n"><%= num(r["active"]) %></td></tr><% end %>
+        <% if @cities.empty? %><tr><td colspan="2" class="empty">No active users</td></tr><% end %>
+      </tbody>
+    </table>
+    <%= link_to "View realtime →", realtime_path(site: site.id), class: "more" %>
+  </section>
+</div>
+<h2 class="section">Suggested for you</h2>
+<div class="cards3">
+  <%= render "shared/card_table", title: "Active users by Country", rows: @countries, key: "value", label: "Country", value_key: "visitors", value_label: "Active users", fmt: :num %>
+  <%= render "shared/card_table", title: "Views by Page title", rows: @titles, key: "title", label: "Page title", value_key: "views", value_label: "Views", fmt: :num %>
+  <%= render "shared/card_table", title: "Sessions by Session channel group", rows: @channels, key: "channel", label: "Channel group", value_key: "sessions", value_label: "Sessions", fmt: :num %>
+</div>

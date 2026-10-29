@@ -1,18 +1,14 @@
+# Reports snapshot
 class OverviewController < ApplicationController
   def show
-    previous = (range.begin - range.count)..(range.begin - 1)
-    @current, @previous = totals(range), totals(previous)
-    @previous_range = previous
-    @series = Analytics.rows("timeseries", **scope(path: ""))
-    @pages = Analytics.rows("top_pages", **scope(path: ""))
-    @sources = Analytics.rows("sources", **scope)
-    @countries = Analytics.rows("breakdown", **scope(dim: "country"))
-    @devices = Analytics.rows("breakdown", **scope(dim: "device"))
+    r = Analytics.parallel(
+      current: -> { Analytics.totals(site, range) }, previous: -> { Analytics.totals(site, previous_range) },
+      series: -> { Analytics.daily(site, range) }, previous_series: -> { Analytics.daily(site, previous_range) },
+      pages: -> { Analytics.rows("top_pages", **scope(path: "")) },
+      channels: -> { Analytics.rows("channels", **scope) },
+      sources: -> { Analytics.rows("sources", **scope) },
+      countries: -> { Analytics.rows("breakdown", **scope(dim: "country")) },
+      devices: -> { Analytics.rows("breakdown", **scope(dim: "device")) })
+    r.each { |k, v| instance_variable_set("@#{k}", v) }
   end
-
-  private
-    def totals(r)
-      p = { site: site.id, from: r.begin.iso8601, to: r.end.iso8601 }
-      Analytics.row("overview_traffic", **p).merge(Analytics.row("overview_sessions", **p))
-    end
 end

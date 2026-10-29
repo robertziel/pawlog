@@ -1,8 +1,11 @@
 <% content_for :title, "#{site.id} · realtime" %>
 <% content_for :head do %><meta http-equiv="refresh" content="10"><% end %>
-<section class="kpis">
-  <div class="kpi" data-kpi="visitors"><span class="label">Visitors · 5 min</span><span class="value"><%= num(@now["visitors"]) %></span></div>
-  <div class="kpi" data-kpi="pageviews"><span class="label">Pageviews · 5 min</span><span class="value"><%= num(@now["pageviews"]) %></span></div>
-</section>
-<p class="meta">refresh 10 s · <%= Time.current.utc.strftime("%H:%M:%S UTC") %></p>
-<%= render "shared/table", rows: @pages, cols: [ [ "Path", "path" ], [ "Visitors", "visitors", method(:num) ], [ "Pageviews", "pageviews", method(:num) ] ] %>
+<div class="page-head"><h1>Realtime overview</h1><span class="meta">refresh 10 s · <%= Time.current.utc.strftime("%H:%M:%S UTC") %></span></div>
+<section class="card rt-card wide"><%= render "shared/realtime_card", now: @now, minutes: @minutes, five: true %></section>
+<div class="cards3">
+  <% { "source" => [ "Active users by Session source", "Session source" ], "title" => [ "Views by Page title", "Page title" ],
+       "country" => [ "Active users by Country", "Country" ], "city" => [ "Active users by City", "City" ] }.each do |dim, (title, label)| %>
+    <% value_key, value_label = dim == "title" ? [ "views", "Views" ] : [ "active", "Active users" ] %>
+    <%= render "shared/card_table", title: title, rows: @by[dim], key: "value", label: label, value_key: value_key, value_label: value_label, fmt: :num %>
+  <% end %>
+</div>

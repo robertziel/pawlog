@@ -1,0 +1,19 @@
+<%# title, rows, key, label, value_key, value_label, fmt, link: ->(row) (optional) — GA-style top-N card %>
+<section class="card top-n" data-card="<%= key %>">
+  <h2><%= title %></h2>
+  <% if (first = rows.first) %>
+    <% total = rows.sum { _1[value_key].to_f } %>
+    <p class="lead"><span>#1 <%= first[key].presence || "(not set)" %></span>
+      <strong><%= send(fmt, first[value_key]) %></strong> <small><%= pct(first[value_key].to_f / total) if total > 0 %></small></p>
+  <% end %>
+  <table>
+    <thead><tr><th><%= label %></th><th class="n"><%= value_label %></th></tr></thead>
+    <tbody>
+      <% rows.first(local_assigns.fetch(:limit, 6)).each do |r| %>
+        <% v = r[key].presence || "(not set)" %>
+        <tr><td><%= local_assigns[:link] ? link_to(v, link.call(r)) : v %></td><td class="n"><%= send(fmt, r[value_key]) %></td></tr>
+      <% end %>
+      <% if rows.empty? %><tr><td colspan="2" class="empty">No data in this range</td></tr><% end %>
+    </tbody>
+  </table>
+</section>

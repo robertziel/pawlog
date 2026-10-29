@@ -1,26 +1,30 @@
-<% content_for :title, "#{site.id} · overview" %>
-<section class="kpis">
-  <% [ [ "Visitors", "visitors", :num, false ], [ "Pageviews", "pageviews", :num, false ], [ "Sessions", "sessions", :num, false ],
-       [ "Bounce", "bounce_rate", :pct, true ], [ "Avg duration", "avg_duration_s", :secs, false ] ].each do |label, k, fmt, lower| %>
-    <div class="kpi" data-kpi="<%= k %>">
-      <span class="label"><%= label %></span>
-      <span class="value"><%= send(fmt, @current[k]) %></span>
-      <%= delta(@current[k], @previous[k], lower_is_better: lower) %>
-      <span class="prev">prev <%= send(fmt, @previous[k]) %></span>
-    </div>
-  <% end %>
+<% content_for :title, "#{site.id} · reports snapshot" %>
+<div class="page-head"><h1>Reports snapshot</h1><%= render "shared/range" %></div>
+<section class="card">
+  <div class="kpis">
+    <% [ [ "Views", "pageviews", :num ], [ "Active users", "visitors", :num ], [ "Sessions", "sessions", :num ],
+         [ "Engagement rate", "engagement_rate", :pct ], [ "Views per session", "views_per_session", :ratio ], [ "Avg session duration", "avg_duration_s", :secs ] ].each do |label, k, kind| %>
+      <div class="kpi" data-kpi="<%= k %>">
+        <span class="label"><%= label %></span>
+        <span class="value"><%= fmt(kind, @current[k]) %></span>
+        <%= delta(@current[k], @previous[k]) %>
+      </div>
+    <% end %>
+  </div>
+  <%= line_chart(@series, @previous_series, key: "pageviews", kind: :num, label: "views per day vs previous period", width: 1100) %>
+  <p class="meta"><%= range.begin %> → <%= range.end %> vs <%= previous_range.begin %> → <%= previous_range.end %> (UTC)</p>
 </section>
-<p class="meta"><%= range.begin %> → <%= range.end %> vs <%= @previous_range.begin %> → <%= @previous_range.end %> (UTC)</p>
-<%= bars(@series) %>
 <div class="grid2">
-  <section><h2>Top pages</h2>
+  <section class="card"><h2>Pages</h2>
     <%= render "shared/table", rows: @pages, link: ->(r) { page_path(scope(path: r["path"])) },
-          cols: [ [ "Path", "path" ], [ "Views", "pageviews", method(:num) ], [ "Visitors", "visitors", method(:num) ], [ "Avg engaged", "avg_engaged_ms", ->(v) { secs(v.to_f / 1000) } ] ] %></section>
-  <section><h2>Sources</h2>
+          cols: [ [ "Path", "path" ], [ "Views", "pageviews", method(:num) ], [ "Active users", "visitors", method(:num) ], [ "Avg engaged", "avg_engaged_ms", ->(v) { secs(v.to_f / 1000) } ] ] %></section>
+  <section class="card"><h2>Session channel group</h2>
+    <%= render "shared/table", rows: @channels, cols: [ [ "Channel", "channel" ], [ "Sessions", "sessions", method(:num) ], [ "Active users", "visitors", method(:num) ], [ "Views", "pageviews", method(:num) ] ] %></section>
+  <section class="card"><h2>Sources</h2>
     <%= render "shared/table", rows: @sources,
-          cols: [ [ "Referrer", "ref_domain" ], [ "utm_source", "utm_source" ], [ "utm_medium", "utm_medium" ], [ "utm_campaign", "utm_campaign" ], [ "Visits", "visits", method(:num) ], [ "Visitors", "visitors", method(:num) ] ] %></section>
-  <section><h2>Countries</h2>
-    <%= render "shared/table", rows: @countries, cols: [ [ "Country", "value" ], [ "Sessions", "sessions", method(:num) ], [ "Visitors", "visitors", method(:num) ] ] %></section>
-  <section><h2>Devices</h2>
-    <%= render "shared/table", rows: @devices, cols: [ [ "Device", "value" ], [ "Sessions", "sessions", method(:num) ], [ "Visitors", "visitors", method(:num) ] ] %></section>
+          cols: [ [ "Referrer", "ref_domain" ], [ "utm_source", "utm_source" ], [ "utm_medium", "utm_medium" ], [ "utm_campaign", "utm_campaign" ], [ "Sessions", "visits", method(:num) ], [ "Active users", "visitors", method(:num) ] ] %></section>
+  <section class="card"><h2>Countries</h2>
+    <%= render "shared/table", rows: @countries, cols: [ [ "Country", "value" ], [ "Sessions", "sessions", method(:num) ], [ "Active users", "visitors", method(:num) ] ] %></section>
+  <section class="card"><h2>Devices</h2>
+    <%= render "shared/table", rows: @devices, cols: [ [ "Device", "value" ], [ "Sessions", "sessions", method(:num) ], [ "Active users", "visitors", method(:num) ] ] %></section>
 </div>

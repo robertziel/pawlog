@@ -8,7 +8,7 @@ DEV := docker run --rm --network container:$(TEST_RP) -v $(CURDIR)/collector:/sr
 	-v pawlog-cargo-registry:/usr/local/cargo/registry -v pawlog-collector-target:/src/target \
 	-e TEST_KAFKA_BROKERS=127.0.0.1:9092 pawlog-collector-dev
 
-.PHONY: up down e2e load test test-collector test-clickhouse test-tracker test-dashboard tracker dashboard-image collector-dev collector-image test-redpanda test-clean
+.PHONY: up down e2e load bench test test-collector test-clickhouse test-tracker test-dashboard tracker dashboard-image collector-dev collector-image test-redpanda test-clean
 
 DC := docker compose -f deploy/docker-compose.yml --env-file deploy/.env
 
@@ -71,6 +71,20 @@ test-clickhouse:
 	docker run -d --rm --name $(TEST_CH) -e CLICKHOUSE_PASSWORD=test -v $(CURDIR)/clickhouse:/pawlog:ro $(CLICKHOUSE_IMAGE) >/dev/null
 	until docker exec $(TEST_CH) clickhouse-client --password test -q 'SELECT 1' >/dev/null 2>&1; do sleep 1; done
 	docker exec -e CLICKHOUSE_HOST=localhost -e CLICKHOUSE_USER=default -e CLICKHOUSE_PASSWORD=test $(TEST_CH) /pawlog/test.sh; s=$$?; docker rm -f $(TEST_CH) >/dev/null; exit $$s
+
+# Storage growth + query latency at VIEWS pageviews/day for DAYS days, in a throwaway ClickHouse sized like deploy/.env.
+DAYS ?= 30
+VIEWS ?= 1000000
+BENCH_CH := pawlog-bench-clickhouse
+bench:
+	-docker rm -f $(BENCH_CH) >/dev/null 2>&1
+	mkdir -p bench/results
+	. deploy/.env; docker run -d --rm --name $(BENCH_CH) --cpus "$$CLICKHOUSE_CPUS" --memory "$$CLICKHOUSE_MEMORY" --ulimit nofile=262144:262144 \
+		-e CLICKHOUSE_PASSWORD=bench -v $(CURDIR)/clickhouse:/pawlog/clickhouse:ro -v $(CURDIR)/bench:/pawlog/bench:ro -v $(CURDIR)/bench/results:/results $(CLICKHOUSE_IMAGE) >/dev/null
+	until docker exec $(BENCH_CH) clickhouse-client --password bench -q 'SELECT 1' >/dev/null 2>&1; do sleep 1; done
+	. deploy/.env; docker exec -e DAYS=$(DAYS) -e VIEWS=$(VIEWS) -e RETENTION_MS="$$KAFKA_RETENTION_MS" -e OUT=/results \
+		-e CLICKHOUSE_HOST=localhost -e CLICKHOUSE_USER=default -e CLICKHOUSE_PASSWORD=bench $(BENCH_CH) /pawlog/bench/run.sh; \
+		s=$$?; docker rm -f $(BENCH_CH) >/dev/null; exit $$s
 
 test-clean:
 	-docker rm -f $(TEST_RP) >/dev/null 2>&1

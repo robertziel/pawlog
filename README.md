@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/logo.svg" width="320" alt="pawlog"></p>
+
 # pawlog
 
 **Self-hosted, cookieless web analytics with click, element and scroll heatmaps.**
@@ -13,9 +15,9 @@ pawlog.js ──POST batch──▶ collector (Rust, hyper 1.x) ── validate 
                            Redpanda topic
                               ▼
             ClickHouse: Kafka engine → MV → events (MergeTree, 180-day TTL)
-                              │ 6 rollup MVs (AggregatingMergeTree)
+                              │ 7 rollup MVs (AggregatingMergeTree)
                               ▼
-                 dashboard (Rails 8): overview · page · realtime · heatmap
+                 dashboard (Rails 8): home · reports snapshot · page · realtime overview / pages · heatmap
 ```
 
 <p align="center"><img src="docs/images/heatmap-elements.png" width="800" alt="Heatmap viewer in element mode: the tracked page framed in the dashboard, clicked buttons outlined with click counts and the average click point"></p>
@@ -82,6 +84,32 @@ network, 20-event batches of 6.7 KB.
 CPU % is of one core. Disk (2.4 MiB per 1M events) is a floor: every request carried the same batch, which compresses far
 better than real traffic.
 
+## Benchmark
+
+`make bench DAYS=90`: 1M pageviews/day of generated traffic (3.53 events/view, 317.8M events) inserted through the
+rollup MVs. ClickHouse limited to 4 CPU / 16 GB.
+
+| store | per day | 180 days | 1 year | 3 years |
+|---|---|---|---|---|
+| events (TTL 180 d, 46 B/event) | 155 MiB | 27.2 GiB | 27.2 GiB | 27.2 GiB |
+| rollups (no TTL) | 44 MiB | 7.7 GiB | 15.7 GiB | 47.0 GiB |
+| Redpanda (7-day retention, JSON) | 2.09 GiB | 14.7 GiB | 14.7 GiB | 14.7 GiB |
+
+| page (warm p50, ms) | 7 d | 28 d |
+|---|---|---|
+| Home | 698 | 1,136 |
+| Reports snapshot | 698 | 830 |
+| Page detail | 52 | 98 |
+| Heatmap | 8 | 11 |
+| Realtime overview (30 min) | 5 | 5 |
+
+| concurrent clients (Home mix, 28 d) | 1 | 4 | 16 | 64 |
+|---|---|---|---|---|
+| QPS · p50 ms | 3 · 152 | 7 · 395 | 5 · 2,150 | 6 × MEMORY_LIMIT_EXCEEDED |
+
+Ingest 620k–925k events/s per day (average real rate at this volume: 41 events/s). Slowest queries at 28 d: titles
+1,136 ms, breakdown 830 ms, sources 414 ms (all merge exact `uniq` states).
+
 ## Make targets
 
 | | |
@@ -90,6 +118,7 @@ better than real traffic.
 | `make test` | collector (unit + Redpanda), ClickHouse rollups vs raw + EXPLAIN of every query, pawlog.js (Playwright), dashboard |
 | `make e2e` | browser → collector → Redpanda → ClickHouse → dashboard heatmap; needs `http://e2e.pawlog.local` in `ALLOWED_ORIGINS` and as a site url in `deploy/sites.yml` |
 | `make load` | ramp 200 → 2,000 → 5,000 req/s; `STEPS="200:10 2000:10"` for a short run |
+| `make bench` | generated traffic (`DAYS ?= 30`, `VIEWS ?= 1000000`): storage growth, query and page latency, concurrency |
 
 ## Layout
 

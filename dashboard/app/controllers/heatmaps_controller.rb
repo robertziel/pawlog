@@ -12,11 +12,9 @@ class HeatmapsController < ApplicationController
     return @pages = Analytics.rows("top_pages", **scope(path: "")) unless @path
 
     q = scope(path: @path, vw: @vw)
-    @layouts = Analytics.rows("layouts", **q)
-    @data = {
-      grid: Analytics.rows("click_grid", **q, layout: @layout),
-      elements: Analytics.rows("click_elements", **q),
-      scroll: Analytics.rows("scroll_map", **q)
-    }
+    r = Analytics.parallel(layouts: -> { Analytics.rows("layouts", **q) }, grid: -> { Analytics.rows("click_grid", **q, layout: @layout) },
+                           elements: -> { Analytics.rows("click_elements", **q) }, scroll: -> { Analytics.rows("scroll_map", **q) })
+    @layouts = r.delete(:layouts)
+    @data = r
   end
 end

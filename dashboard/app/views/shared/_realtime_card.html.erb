@@ -1,0 +1,10 @@
+<%# now, minutes %>
+<div class="rt-head">
+  <div data-kpi="active_30m"><span class="label">Active users in last 30 minutes</span><span class="value"><%= num(now["active_30m"]) %></span></div>
+  <% if local_assigns[:five] %>
+    <div data-kpi="active_5m"><span class="label">Active users in last 5 minutes</span><span class="value"><%= num(now["active_5m"]) %></span></div>
+  <% end %>
+</div>
+<span class="label">Active users per minute</span>
+<%= bars(minutes, key: "active", label: ->(r) { r["minute"].to_time.utc.strftime("%H:%M UTC") }, aria: "active users per minute, last 30 minutes") %>
+<div class="axis"><span>-30 min</span><span>-15 min</span><span>-1 min</span></div>

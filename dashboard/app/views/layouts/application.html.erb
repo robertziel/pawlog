@@ -5,31 +5,31 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icon.png">
     <%= stylesheet_link_tag :app %>
     <%= yield :head %>
   </head>
-  <body>
+  <body class="<%= "app" if authenticated? %>">
     <% if authenticated? %>
       <header class="top">
-        <strong>pawlog</strong>
-        <nav>
-          <%= link_to "Overview", root_path(scope), class: ("on" if controller_name == "overview") %>
-          <%= link_to "Realtime", realtime_path(site: site.id), class: ("on" if controller_name == "realtime") %>
-          <%= link_to "Heatmap", heatmap_path(scope), class: ("on" if controller_name == "heatmaps") %>
-        </nav>
-        <%= form_with url: request.path, method: :get, class: "filters" do |f| %>
-          <%= f.select :site, Site.all.map(&:id), selected: site.id %>
-          <% unless controller_name == "realtime" %>
-            <%= f.date_field :from, value: range.begin %>
-            <%= f.date_field :to, value: range.end %>
-          <% end %>
-          <% %i[path vw layout mode].each do |k| %>
-            <%= f.hidden_field k, value: params[k] if params[k].present? %>
-          <% end %>
-          <%= f.submit "Apply" %>
-        <% end %>
+        <%= link_to root_path(site: site.id), class: "brand" do %><img src="/icon.svg" alt="" width="26" height="26">pawlog<% end %>
+        <details class="menu">
+          <summary><small>Site</small> <%= site.id %> ▾</summary>
+          <div class="pop"><% Site.all.each do |s| %><%= link_to s.id, here(site: s.id), class: ("on" if s.id == site.id) %><% end %></div>
+        </details>
         <%= button_to "Sign out", session_path, method: :delete, class: "signout" %>
       </header>
+      <nav class="side" aria-label="sections">
+        <%= link_to "Home", root_path(scope), class: ("on" if controller_name == "home") %>
+        <h3>Reports</h3>
+        <%= link_to "Reports snapshot", reports_path(scope), class: ("on" if controller_name.in?(%w[overview pages])) %>
+        <%= link_to "Realtime overview", realtime_path(site: site.id), class: ("on" if action_name == "show" && controller_name == "realtime") %>
+        <%= link_to "Realtime pages", realtime_pages_path(site: site.id), class: ("on" if action_name == "pages") %>
+        <h3>Explore</h3>
+        <%= link_to "Heatmaps", heatmap_path(scope), class: ("on" if controller_name == "heatmaps") %>
+      </nav>
     <% end %>
     <main><%= yield %></main>
   </body>

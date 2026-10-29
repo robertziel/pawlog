@@ -15,6 +15,7 @@ make up          # build + start the stack, apply ClickHouse migrations (idempot
 make test        # collector (unit + Redpanda integration), ClickHouse rollups, tracker (Playwright), dashboard
 make e2e         # real browser -> collector -> Redpanda -> ClickHouse, against the running stack
 make load        # oha ramp 200 -> 2000 -> 5000 req/s; STEPS="200:10 2000:10" for a short run
+make bench       # 1M views/day for 30 days: storage growth, query latency, concurrency; DAYS=90 VIEWS=200000 to vary
 make down
 ```
 
@@ -30,7 +31,7 @@ make down
 - **Privacy.** Never store or log a raw IP. `visitor_id` = sha256(ip, ua, site, daily salt) truncated to u64, with the
   salt random per UTC day and held only in memory. `cid` (cookie id) exists only after `analytics.consent(true)`.
   DNT/GPC = no tracking.
-- **Dashboards read rollups only.** The single exception is realtime (last 5 min of raw `events`).
+- **Dashboards read rollups only.** The single exception is realtime (`realtime*.sql`: last 30 min from `events_recent`, a 1-hour copy of raw `events`). Session stats for closed days come from `session_stats`/`session_pages` (refreshable MVs); open days from `sessions`.
   Dashboard SQL lives in `clickhouse/queries/*.sql` (one source, parameterized; `make test` EXPLAINs each).
 - **Migrations** are numbered, idempotent (`IF NOT EXISTS`) and applied in order by `clickhouse/migrate.sh`.
   The Kafka ingest is last so rollup MVs exist before rows flow.

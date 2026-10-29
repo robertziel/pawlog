@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 112" width="450" height="112">
+  <style>
+    .word { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 72px; letter-spacing: -2px; fill: #1b1f24; }
+    .log { fill: #2b6cb0; }
+    @media (prefers-color-scheme: dark) { .word { fill: #e6e8eb; } .log { fill: #7ab0ef; } }
+  </style>
+  <!-- mark: a paw print whose toes are rising chart bars -->
+  <g transform="translate(8 8) scale(0.1875)">
+    <rect width="512" height="512" rx="112" fill="#2b6cb0"/>
+    <g fill="#fff">
+      <rect x="92" y="180" width="96" height="96" rx="48"/>
+      <rect x="208" y="116" width="96" height="160" rx="48"/>
+      <rect x="324" y="52" width="96" height="224" rx="48"/>
+      <path d="M256 304c74 0 148 42 148 98c0 32-30 48-70 46c-30-2-50 6-78 6s-48-8-78-6c-40 2-70-14-70-46c0-56 74-98 148-98z"/>
+    </g>
+  </g>
+  <text class="word" x="122" y="81">paw<tspan class="log">log</tspan></text>
+</svg>

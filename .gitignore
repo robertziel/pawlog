@@ -6,6 +6,7 @@ collector/target/
 tracker/node_modules/
 tracker/dist/
 loadtest/results/
+bench/results/
 tracker/test-results/
 dashboard/log/*
 dashboard/tmp/*

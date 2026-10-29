@@ -1,4 +1,5 @@
 <% content_for :title, "#{site.id} · heatmap" %>
+<div class="page-head"><h1>Heatmaps</h1><%= render "shared/range" %></div>
 <% if @pages %>
   <h2>Pick a page</h2>
   <%= render "shared/table", rows: @pages, link: ->(r) { heatmap_path(scope(path: r["path"], vw: @vw, mode: @mode)) },
