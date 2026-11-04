@@ -42,7 +42,7 @@ pipeline {
       // path, so bind mounts made by the Makefile (docker run -v $SRC/...) resolve on the host.
       steps {
         sh '''
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$SRC":"$SRC" -w "$SRC" \
+          docker run --rm -e SRC -v /var/run/docker.sock:/var/run/docker.sock -v "$SRC":"$SRC" -w "$SRC" \
             docker:27-cli sh -c 'apk add -q --no-cache make python3 bash && make test SRC="$SRC"'
         '''
       }
@@ -59,7 +59,7 @@ pipeline {
     cleanup {
       // the test containers write into the bind-mounted checkout as root
       sh 'docker run --rm -v "$SRC":/w alpine chown -R "$(id -u):$(id -g)" /w || true'
-      sh 'make test-clean || true'
+      sh 'true'
       cleanWs()
     }
   }
