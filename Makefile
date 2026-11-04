@@ -1,10 +1,12 @@
+# Host path of this checkout for bind mounts. Differs from the cwd only when make runs inside a container (Jenkins).
+SRC ?= $(CURDIR)
 REDPANDA_IMAGE := redpandadata/redpanda:v25.2.1
 CLICKHOUSE_IMAGE := clickhouse/clickhouse-server:25.8
 TEST_CH := pawlog-test-clickhouse
 BUN_IMAGE := oven/bun:1.3.14
 PLAYWRIGHT_IMAGE := mcr.microsoft.com/playwright:v1.56.1-noble
 TEST_RP := pawlog-test-redpanda
-DEV := docker run --rm --network container:$(TEST_RP) -v $(CURDIR)/collector:/src \
+DEV := docker run --rm --network container:$(TEST_RP) -v $(SRC)/collector:/src \
 	-v pawlog-cargo-registry:/usr/local/cargo/registry -v pawlog-collector-target:/src/target \
 	-e TEST_KAFKA_BROKERS=127.0.0.1:9092 pawlog-collector-dev
 
@@ -21,7 +23,7 @@ up: tracker
 e2e: up
 	. deploy/.env; docker run --rm --ipc=host --network pawlog_default --add-host e2e.pawlog.local:127.0.0.1 \
 		-e COLLECTOR=http://collector:8080 -e CLICKHOUSE=http://clickhouse:8123 -e CH_DB="$$CLICKHOUSE_DB" -e CH_USER=dashboard -e CH_PASSWORD="$$CLICKHOUSE_DASHBOARD_PASSWORD" \
-		-e ORIGIN_HOST=e2e.pawlog.local -e DASHBOARD=http://dashboard:3000 -e ADMIN_EMAIL="$$ADMIN_EMAIL" -e ADMIN_PASSWORD="$$ADMIN_PASSWORD" -v $(CURDIR)/tracker:/app -v pawlog-tracker-node-modules:/app/node_modules -w /app $(PLAYWRIGHT_IMAGE) \
+		-e ORIGIN_HOST=e2e.pawlog.local -e DASHBOARD=http://dashboard:3000 -e ADMIN_EMAIL="$$ADMIN_EMAIL" -e ADMIN_PASSWORD="$$ADMIN_PASSWORD" -v $(SRC)/tracker:/app -v pawlog-tracker-node-modules:/app/node_modules -w /app $(PLAYWRIGHT_IMAGE) \
 		sh -c 'npm install --no-audit --no-fund --silent && node --test test/stack.mjs'
 
 load: up
@@ -51,16 +53,16 @@ test-dashboard: dashboard-image
 	-docker rm -f $(TEST_CH) >/dev/null 2>&1
 	docker run -d --rm --name $(TEST_CH) -e CLICKHOUSE_PASSWORD=test $(CLICKHOUSE_IMAGE) >/dev/null
 	until docker exec $(TEST_CH) clickhouse-client --password test -q 'SELECT 1' >/dev/null 2>&1; do sleep 1; done
-	docker run --rm --network container:$(TEST_CH) -v $(CURDIR)/dashboard:/app -v $(CURDIR)/clickhouse:/clickhouse:ro -e RAILS_ENV=test \
+	docker run --rm --network container:$(TEST_CH) -v $(SRC)/dashboard:/app -v $(SRC)/clickhouse:/clickhouse:ro -e RAILS_ENV=test \
 		-e CLICKHOUSE_URL=http://127.0.0.1:8123 -e CLICKHOUSE_DB=pawlog_dashboard_test -e CLICKHOUSE_USER=default -e CLICKHOUSE_PASSWORD=test \
 		-e CLICKHOUSE_QUERIES_DIR=/clickhouse/queries -e CLICKHOUSE_MIGRATIONS_DIR=/clickhouse/migrations -e PAWLOG_SITES_FILE=test/fixtures/files/sites.yml \
 		pawlog-dashboard sh -c 'bin/rails db:migrate >/dev/null && bin/rails test'; s=$$?; docker rm -f $(TEST_CH) >/dev/null; exit $$s
 
 tracker:
-	docker run --rm -v $(CURDIR)/tracker:/app -w /app $(BUN_IMAGE) ./build.sh
+	docker run --rm -v $(SRC)/tracker:/app -w /app $(BUN_IMAGE) ./build.sh
 
 test-tracker: tracker
-	docker run --rm --ipc=host -v $(CURDIR)/tracker:/app -v pawlog-tracker-node-modules:/app/node_modules -w /app $(PLAYWRIGHT_IMAGE) \
+	docker run --rm --ipc=host -v $(SRC)/tracker:/app -v pawlog-tracker-node-modules:/app/node_modules -w /app $(PLAYWRIGHT_IMAGE) \
 		sh -c 'npm install --no-audit --no-fund --silent && node --test test/e2e.mjs'
 
 test-collector: collector-dev test-redpanda
@@ -68,7 +70,7 @@ test-collector: collector-dev test-redpanda
 
 test-clickhouse:
 	-docker rm -f $(TEST_CH) >/dev/null 2>&1
-	docker run -d --rm --name $(TEST_CH) -e CLICKHOUSE_PASSWORD=test -v $(CURDIR)/clickhouse:/pawlog:ro $(CLICKHOUSE_IMAGE) >/dev/null
+	docker run -d --rm --name $(TEST_CH) -e CLICKHOUSE_PASSWORD=test -v $(SRC)/clickhouse:/pawlog:ro $(CLICKHOUSE_IMAGE) >/dev/null
 	until docker exec $(TEST_CH) clickhouse-client --password test -q 'SELECT 1' >/dev/null 2>&1; do sleep 1; done
 	docker exec -e CLICKHOUSE_HOST=localhost -e CLICKHOUSE_USER=default -e CLICKHOUSE_PASSWORD=test $(TEST_CH) /pawlog/test.sh; s=$$?; docker rm -f $(TEST_CH) >/dev/null; exit $$s
 
@@ -80,7 +82,7 @@ bench:
 	-docker rm -f $(BENCH_CH) >/dev/null 2>&1
 	mkdir -p bench/results
 	. deploy/.env; docker run -d --rm --name $(BENCH_CH) --cpus "$$CLICKHOUSE_CPUS" --memory "$$CLICKHOUSE_MEMORY" --ulimit nofile=262144:262144 \
-		-e CLICKHOUSE_PASSWORD=bench -v $(CURDIR)/clickhouse:/pawlog/clickhouse:ro -v $(CURDIR)/bench:/pawlog/bench:ro -v $(CURDIR)/bench/results:/results $(CLICKHOUSE_IMAGE) >/dev/null
+		-e CLICKHOUSE_PASSWORD=bench -v $(SRC)/clickhouse:/pawlog/clickhouse:ro -v $(SRC)/bench:/pawlog/bench:ro -v $(SRC)/bench/results:/results $(CLICKHOUSE_IMAGE) >/dev/null
 	until docker exec $(BENCH_CH) clickhouse-client --password bench -q 'SELECT 1' >/dev/null 2>&1; do sleep 1; done
 	. deploy/.env; docker exec -e DAYS=$(DAYS) -e VIEWS=$(VIEWS) -e RETENTION_MS="$$KAFKA_RETENTION_MS" -e OUT=/results \
 		-e CLICKHOUSE_HOST=localhost -e CLICKHOUSE_USER=default -e CLICKHOUSE_PASSWORD=bench $(BENCH_CH) /pawlog/bench/run.sh; \
